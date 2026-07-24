@@ -1,0 +1,35 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: streamflix-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: Lucky@12342006
+      MYSQL_DATABASE: streamflix
+    ports:
+      - "3306:3306"
+    volumes:
+      - streamflix_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pLucky@12342006"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: streamflix-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_USERNAME: root
+      DB_PASSWORD: Lucky@12342006
+      JWT_SECRET: local-dev-only-secret-change-this-3f9a7c2b1e8d4f6a0c5b9d3e7f1a2c4b
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/streamflix?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    ports:
+      - "8080:8080"
+
+volumes:
+  streamflix_mysql_data:

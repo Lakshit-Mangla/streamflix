@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Streamflix — Live (connected to your backend)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0D1117;
+    --surface:#161B22;
+    --surface-2:#1F2733;
+    --surface-3:#26303f;
+    --accent:#E8A33D;
+    --accent-dim:#6b5326;
+    --console:#5FD4C1;
+    --text:#EDEFF2;
+    --text-dim:#8B94A3;
+    --danger:#E0605A;
+    --border:#2A3341;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Sora',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  ::selection{background:var(--accent);color:#1a1200;}
+  a{color:inherit;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .display{font-family:'Bebas Neue',sans-serif; letter-spacing:0.03em;}
+
+  button{
+    font-family:'Sora',sans-serif;
+    cursor:pointer;
+    border:none;
+    outline:none;
+  }
+  button:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+  }
+  input, textarea{
+    font-family:'Sora',sans-serif;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:6px;
+    padding:10px 12px;
+  }
+  input::placeholder{color:var(--text-dim);}
+
+  /* ---------- Auth screen ---------- */
+  #authScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(232,163,61,0.08), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(95,212,193,0.06), transparent 45%),
+      var(--bg);
+    padding:24px;
+  }
+  .auth-card{
+    width:100%;
+    max-width:400px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:36px 32px;
+  }
+  .auth-logo{
+    font-size:40px;
+    color:var(--accent);
+    margin-bottom:4px;
+    line-height:1;
+  }
+  .auth-sub{
+    color:var(--text-dim);
+    font-size:13px;
+    margin-bottom:28px;
+  }
+  .tab-row{
+    display:flex;
+    gap:4px;
+    background:var(--surface-2);
+    border-radius:8px;
+    padding:4px;
+    margin-bottom:20px;
+  }
+  .tab-btn{
+    flex:1;
+    background:transparent;
+    color:var(--text-dim);
+    padding:8px 0;
+    border-radius:6px;
+    font-size:13px;
+    font-weight:600;
+  }
+  .tab-btn.active{
+    background:var(--surface-3);
+    color:var(--text);
+  }
+  .field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
+  .field label{font-size:12px; color:var(--text-dim);}
+  .primary-btn{
+    width:100%;
+    background:var(--accent);
+    color:#1a1200;
+    font-weight:700;
+    padding:11px 0;
+    border-radius:8px;
+    font-size:14px;
+    margin-top:8px;
+    transition:transform .12s ease, background .15s ease;
+  }
+  .primary-btn:hover{background:#f2b354;}
+  .primary-btn:active{transform:scale(0.98);}
+  .auth-note{
+    margin-top:18px;
+    font-size:11.5px;
+    color:var(--text-dim);
+    line-height:1.5;
+    background:var(--surface-2);
+    border:1px dashed var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+  }
+  .auth-note b{color:var(--accent);}
+  .auth-error{
+    color:var(--danger);
+    font-size:12.5px;
+    margin:-6px 0 12px;
+    min-height:1px;
+  }
+
+  /* ---------- App shell ---------- */
+  #appScreen{display:none;}
+  header.topnav{
+    position:sticky; top:0; z-index:30;
+    display:flex; align-items:center; gap:24px;
+    padding:14px 28px;
+    background:rgba(13,17,23,0.9);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .brand{font-size:26px; color:var(--accent); white-space:nowrap;}
+  nav.navlinks{display:flex; gap:4px; flex:0 0 auto;}
+  nav.navlinks button{
+    background:transparent; color:var(--text-dim);
+    font-size:13px; font-weight:600; padding:8px 12px; border-radius:6px;
+  }
+  nav.navlinks button.active{color:var(--text); background:var(--surface-2);}
+  nav.navlinks button:hover{color:var(--text);}
+  .searchwrap{flex:1; max-width:420px; position:relative;}
+  .searchwrap input{width:100%; padding:9px 14px 9px 34px; font-size:13px;}
+  .searchwrap svg{position:absolute; left:11px; top:50%; transform:translateY(-50%); opacity:0.5;}
+  .topnav-right{margin-left:auto; display:flex; align-items:center; gap:14px;}
+  .user-chip{font-size:12.5px; color:var(--text-dim);}
+  .user-chip b{color:var(--text);}
+  .logout-btn{background:var(--surface-2); color:var(--text-dim); font-size:12px; padding:7px 12px; border-radius:6px;}
+  .logout-btn:hover{color:var(--text);}
+  .admin-toggle{
+    display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--text-dim); cursor:pointer; user-select:none;
+  }
+  .admin-toggle input{appearance:none; width:30px; height:17px; background:var(--surface-3); border-radius:20px; position:relative; padding:0; cursor:pointer; transition:background .15s;}
+  .admin-toggle input::before{content:''; position:absolute; width:13px; height:13px; border-radius:50%; background:var(--text-dim); top:2px; left:2px; transition:transform .15s, background .15s;}
+  .admin-toggle input:checked{background:var(--accent-dim);}
+  .admin-toggle input:checked::before{transform:translateX(13px); background:var(--accent);}
+
+  /* ---------- Browse filter bar ---------- */
+  .filter-bar{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin-bottom:20px;
+  }
+  .filter-field{display:flex; flex-direction:column; gap:5px;}
+  .filter-field label{font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim);}
+  .filter-field select, .filter-field input{font-size:12.5px; padding:8px 10px; min-width:120px;}
+  .filter-field.narrow select, .filter-field.narrow input{min-width:80px;}
+  .filter-apply{
+    background:var(--accent); color:#1a1200; font-weight:700; font-size:12.5px;
+    padding:9px 16px; border-radius:7px; margin-left:auto;
+  }
+  .filter-apply:hover{background:#f2b354;}
+  .filter-reset{
+    background:transparent; color:var(--text-dim); font-size:12px; text-decoration:underline; padding:9px 4px;
+  }
+
+  /* ---------- Admin panel ---------- */
+  .admin-grid{display:grid; grid-template-columns:340px 1fr; gap:24px; align-items:flex-start;}
+  @media (max-width:900px){ .admin-grid{grid-template-columns:1fr;} }
+  .admin-form{
+    background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px;
+    display:flex; flex-direction:column; gap:12px; position:sticky; top:80px;
+  }
+  .admin-form h3{margin:0 0 4px; font-family:'Bebas Neue'; font-size:19px; letter-spacing:0.03em; font-weight:400;}
+  .admin-form .field label{font-size:11px;}
+  .admin-form .field input, .admin-form .field select, .admin-form .field textarea{font-size:12.5px; width:100%;}
+  .admin-form textarea{resize:vertical; min-height:56px;}
+  .genre-check-grid{display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:12px;}
+  .genre-check-grid label{display:flex; align-items:center; gap:6px; color:var(--text-dim); cursor:pointer;}
+  .admin-form-actions{display:flex; gap:8px; margin-top:4px;}
+  .admin-form-actions button{flex:1; padding:10px 0; border-radius:7px; font-size:12.5px; font-weight:600;}
+  .btn-cancel{background:var(--surface-2); color:var(--text-dim);}
+
+  .admin-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .admin-table th{text-align:left; color:var(--text-dim); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; padding:10px 12px; border-bottom:1px solid var(--border);}
+  .admin-table td{padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  .admin-table tr:hover td{background:var(--surface-2);}
+  .admin-row-actions{display:flex; gap:6px;}
+  .admin-row-actions button{background:var(--surface-2); color:var(--text-dim); font-size:11px; padding:5px 10px; border-radius:5px;}
+  .admin-row-actions button:hover{color:var(--text);}
+  .admin-row-actions button.danger:hover{color:var(--danger);}
+  .locked-state{
+    display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center;
+    padding:60px 20px; color:var(--text-dim); font-size:13px;
+  }
+  .locked-state b{font-family:'Bebas Neue'; font-size:20px; letter-spacing:0.03em; color:var(--text);}
+
+  main{max-width:1280px; margin:0 auto; padding:28px 28px 140px;}
+
+  .section-head{display:flex; align-items:baseline; justify-content:space-between; margin:34px 0 14px;}
+  .section-head:first-child{margin-top:6px;}
+  .section-title{font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:0.04em; color:var(--text);}
+  .section-sub{font-size:12px; color:var(--text-dim); margin-top:2px;}
+  .section-meta{font-size:11px; color:var(--text-dim);}
+
+  .rail{
+    display:flex; gap:16px; overflow-x:auto; padding-bottom:10px;
+    scrollbar-width:thin; scrollbar-color:var(--surface-3) transparent;
+  }
+  .rail::-webkit-scrollbar{height:6px;}
+  .rail::-webkit-scrollbar-thumb{background:var(--surface-3); border-radius:3px;}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:16px;}
+
+  /* ---------- Ticket-stub movie card (signature-adjacent element) ---------- */
+  .ticket{
+    position:relative;
+    width:190px; flex:0 0 190px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    overflow:hidden;
+    cursor:pointer;
+    transition:transform .15s ease, border-color .15s ease;
+  }
+  .grid .ticket{width:auto; flex:none;}
+  .ticket:hover{transform:translateY(-4px); border-color:var(--accent-dim);}
+  .ticket-poster{
+    height:110px;
+    display:flex; align-items:flex-end;
+    padding:10px;
+    position:relative;
+  }
+  .ticket-badge{
+    position:absolute; top:8px; right:8px;
+    font-size:10px; font-family:'IBM Plex Mono',monospace;
+    background:rgba(0,0,0,0.45); color:var(--accent);
+    padding:2px 6px; border-radius:4px;
+  }
+  .ticket-type{
+    font-size:10px; font-family:'IBM Plex Mono',monospace;
+    color:rgba(255,255,255,0.85);
+    background:rgba(0,0,0,0.35);
+    padding:2px 6px; border-radius:4px;
+  }
+  .ticket-perf{
+    height:0; border-top:1.5px dashed rgba(255,255,255,0.18);
+    position:relative;
+  }
+  .ticket-perf::before, .ticket-perf::after{
+    content:''; position:absolute; top:-6px; width:12px; height:12px;
+    background:var(--bg); border-radius:50%;
+  }
+  .ticket-perf::before{left:-6px;}
+  .ticket-perf::after{right:-6px;}
+  .ticket-body{padding:10px 12px 12px;}
+  .ticket-title{font-size:13.5px; font-weight:600; line-height:1.25; margin-bottom:4px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  .ticket-meta{font-size:11px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; display:flex; gap:8px; align-items:center;}
+  .ticket-rating{color:var(--accent);}
+  .ticket-progress{height:3px; background:var(--surface-3); margin-top:8px; border-radius:2px; overflow:hidden;}
+  .ticket-progress > div{height:100%; background:var(--console);}
+
+  .empty-state{
+    border:1px dashed var(--border); border-radius:10px;
+    padding:40px 20px; text-align:center; color:var(--text-dim); font-size:13px;
+  }
+  .empty-state b{color:var(--text); display:block; font-size:15px; margin-bottom:6px; font-family:'Bebas Neue'; letter-spacing:0.03em;}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(4,6,10,0.72);
+    z-index:100; align-items:flex-start; justify-content:center; overflow-y:auto; padding:40px 16px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    width:100%; max-width:720px; background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; overflow:hidden;
+  }
+  .modal-hero{
+    height:170px; padding:20px; display:flex; flex-direction:column; justify-content:flex-end; position:relative;
+  }
+  .modal-close{
+    position:absolute; top:14px; right:14px; width:30px; height:30px; border-radius:50%;
+    background:rgba(0,0,0,0.45); color:#fff; font-size:16px; display:flex; align-items:center; justify-content:center;
+  }
+  .modal-hero-title{font-family:'Bebas Neue'; font-size:34px; letter-spacing:0.03em; text-shadow:0 2px 12px rgba(0,0,0,0.5);}
+  .modal-hero-meta{font-family:'IBM Plex Mono',monospace; font-size:12px; color:rgba(255,255,255,0.85); margin-top:4px;}
+  .modal-body{padding:22px 24px 26px;}
+  .chip-row{display:flex; flex-wrap:wrap; gap:6px; margin:12px 0 16px;}
+  .chip{
+    font-size:11px; padding:4px 10px; border-radius:999px; background:var(--surface-2);
+    border:1px solid var(--border); color:var(--text-dim);
+  }
+  .modal-desc{font-size:13.5px; line-height:1.6; color:var(--text); margin-bottom:14px;}
+  .modal-credits{font-size:12px; color:var(--text-dim); line-height:1.7; margin-bottom:20px;}
+  .modal-credits b{color:var(--text); font-weight:600;}
+  .modal-actions{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;}
+  .action-btn{
+    display:flex; align-items:center; gap:7px;
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    padding:9px 14px; border-radius:8px; font-size:12.5px; font-weight:600;
+  }
+  .action-btn:hover{border-color:var(--accent-dim);}
+  .action-btn.on{background:var(--accent-dim); color:var(--accent); border-color:var(--accent-dim);}
+  .stars{display:flex; gap:2px;}
+  .star{font-size:17px; color:var(--surface-3); cursor:pointer; transition:color .1s;}
+  .star.filled{color:var(--accent);}
+
+  .progress-block{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:18px;}
+  .progress-block-head{display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-dim); margin-bottom:8px;}
+  .progress-track{height:6px; background:var(--surface-3); border-radius:3px; position:relative; cursor:pointer;}
+  .progress-fill{height:100%; background:var(--console); border-radius:3px;}
+
+  .modal-section-title{font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); margin:20px 0 10px;}
+
+  /* ---------- API console ---------- */
+  #consoleToggle{
+    position:fixed; bottom:0; left:0; right:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--surface); border-top:1px solid var(--border);
+    padding:10px 20px; font-size:12px; color:var(--text-dim);
+  }
+  #consoleToggle .left{display:flex; align-items:center; gap:10px;}
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--console); box-shadow:0 0 8px var(--console);}
+  #consoleToggle button{background:transparent; color:var(--console); font-size:12px; font-family:'IBM Plex Mono',monospace;}
+  #consolePanel{
+    position:fixed; left:0; right:0; bottom:38px; z-index:49;
+    max-height:0; overflow:hidden; transition:max-height .25s ease;
+    background:#0A0D12; border-top:1px solid var(--border);
+  }
+  #consolePanel.open{max-height:260px;}
+  #consoleLog{
+    max-height:260px; overflow-y:auto; padding:14px 20px;
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; line-height:1.9;
+  }
+  .log-line{white-space:pre-wrap; word-break:break-all;}
+  .log-verb{color:var(--console); font-weight:700;}
+  .log-path{color:var(--text);}
+  .log-status-2{color:#7CD992;}
+  .log-status-4{color:var(--danger);}
+  .log-payload{color:var(--text-dim);}
+
+  /* ---------- Recommendation explainer ---------- */
+  .why-card{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin-bottom:18px; font-size:12.5px; color:var(--text-dim); line-height:1.6;
+  }
+  .why-card b{color:var(--accent);}
+  .affinity-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .affinity-pill{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    background:var(--surface-3); border-radius:5px; padding:3px 8px; color:var(--text);
+  }
+  .affinity-pill span{color:var(--accent);}
+
+  @media (max-width:720px){
+    header.topnav{flex-wrap:wrap; gap:10px; padding:12px 16px;}
+    nav.navlinks{order:3; width:100%; overflow-x:auto;}
+    .searchwrap{order:2; max-width:none; flex:1 1 100%;}
+    main{padding:20px 16px 140px;}
+  }
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo display">STREAMFLIX</div>
+    <div class="auth-sub">Connected to your real backend — not a simulation</div>
+
+    <div class="field" style="margin-bottom:18px;">
+      <label>Backend address</label>
+      <input type="text" id="apiBaseInput" name="streamflix-backend-address-not-a-url-field" autocomplete="off" value="http://localhost:8080" onchange="updateApiBase(this.value)">
+      <button type="button" onclick="document.getElementById('apiBaseInput').value='http://localhost:8080'; updateApiBase('http://localhost:8080');" style="margin-top:6px; background:var(--surface-3); color:var(--text-dim); font-size:11px; padding:6px 10px; border-radius:5px;">Reset to default</button>
+      <div id="connStatus" class="auth-note" style="margin-top:8px;">Checking connection…</div>
+    </div>
+
+    <div class="tab-row">
+      <button class="tab-btn active" id="tabLogin" onclick="setAuthTab('login')">Log in</button>
+      <button class="tab-btn" id="tabRegister" onclick="setAuthTab('register')">Register</button>
+    </div>
+
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="ada@example.com" required>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" required>
+      </div>
+      <div class="auth-error" id="loginError"></div>
+      <button class="primary-btn" type="submit">Log in</button>
+    </form>
+
+    <form id="registerForm" style="display:none;" onsubmit="return handleRegister(event)">
+      <div class="field">
+        <label>Full name</label>
+        <input type="text" id="regName" placeholder="Ada Lovelace" required>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="regEmail" placeholder="ada@example.com" required>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="regPassword" placeholder="At least 8 characters" minlength="8" required>
+      </div>
+      <div class="auth-error" id="regError"></div>
+      <button class="primary-btn" type="submit">Create account</button>
+    </form>
+
+    <div style="display:flex; align-items:center; gap:10px; margin:20px 0;">
+      <div style="flex:1; height:1px; background:var(--border);"></div>
+      <span style="font-size:11px; color:var(--text-dim);">or</span>
+      <div style="flex:1; height:1px; background:var(--border);"></div>
+    </div>
+
+    <div id="googleSignInDiv" style="display:flex; justify-content:center; margin-bottom:8px;"></div>
+
+    <details style="margin-bottom:8px;">
+      <summary style="font-size:11.5px; color:var(--text-dim); cursor:pointer;">Google Sign-In not showing up? Set it up here</summary>
+      <div class="field" style="margin-top:10px;">
+        <label>Google OAuth Client ID</label>
+        <input type="text" id="googleClientIdInput" placeholder="xxxxxxxx.apps.googleusercontent.com">
+        <button type="button" class="action-btn" style="margin-top:8px; justify-content:center;" onclick="activateGoogleSignIn()">Activate</button>
+      </div>
+    </details>
+
+    <div class="auth-note">
+      <b>Real backend.</b> This calls your actual Spring Boot app at the address above.
+      Register a new account or log in with one you made in Swagger earlier — either works,
+      it's the same database.
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP SCREEN ============ -->
+<div id="appScreen">
+  <header class="topnav">
+    <div class="brand display">STREAMFLIX</div>
+    <nav class="navlinks" id="navLinks">
+      <button data-view="home" class="active" onclick="setView('home')">Home</button>
+      <button data-view="browse" onclick="setView('browse')">Browse</button>
+      <button data-view="foryou" onclick="setView('foryou')">For You</button>
+      <button data-view="watchlist" onclick="setView('watchlist')">My List</button>
+      <button data-view="history" onclick="setView('history')">History</button>
+      <button data-view="admin" id="adminNavBtn" style="display:none;" onclick="setView('admin')">Admin</button>
+    </nav>
+    <div class="searchwrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search titles, genres, cast, directors…" oninput="handleSearch(this.value)">
+    </div>
+    <div class="topnav-right">
+      <label class="admin-toggle">
+        <input type="checkbox" id="adminToggle" onchange="toggleAdminMode(this.checked)">
+        <span>Admin mode</span>
+      </label>
+      <span class="user-chip" id="userChip"></span>
+      <button class="logout-btn" onclick="handleLogout()">Log out</button>
+    </div>
+  </header>
+
+  <main id="mainContent"></main>
+</div>
+
+<!-- ============ MOVIE MODAL ============ -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- ============ API CONSOLE ============ -->
+<div id="consolePanel"><div id="consoleLog"></div></div>
+<div id="consoleToggle">
+  <div class="left"><span class="dot"></span> API Console — live request/response log from your actions</div>
+  <button onclick="toggleConsole()" id="consoleToggleBtn">Show ▲</button>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+let API_BASE = (window.location.protocol.startsWith('http')) ? window.location.origin : "http://localhost:8080";
+{
+  const input = document.getElementById('apiBaseInput');
+  if(input) input.value = API_BASE;
+}
+
+const GENRES = ["Action","Comedy","Drama","Sci-Fi","Horror","Thriller","Romance","Documentary","Animation","Fantasy"];
+
+const GRADIENTS = {
+  "Action":"linear-gradient(135deg,#3a1c1c,#7a2e1e)",
+  "Comedy":"linear-gradient(135deg,#3a3312,#7a6a1e)",
+  "Drama":"linear-gradient(135deg,#1c2a3a,#2e4f7a)",
+  "Sci-Fi":"linear-gradient(135deg,#151d3a,#2e2e7a)",
+  "Horror":"linear-gradient(135deg,#1a0f0f,#4a1414)",
+  "Thriller":"linear-gradient(135deg,#141414,#3a1c3a)",
+  "Romance":"linear-gradient(135deg,#3a1c2e,#7a2e56)",
+  "Documentary":"linear-gradient(135deg,#12241f,#1e5240)",
+  "Animation":"linear-gradient(135deg,#2a1c3a,#5e2e7a)",
+  "Fantasy":"linear-gradient(135deg,#1c2f2a,#2e6b52)"
+};
+function gradientFor(movie){ return GRADIENTS[(movie.genres&&movie.genres[0])||'Drama'] || GRADIENTS['Drama']; }
+
+/* ============================================================
+   SESSION / STATE
+   ============================================================ */
+let session = null; // { accessToken, refreshToken, userId, fullName, email, role }
+let currentView = "home";
+let searchQuery = "";
+let searchDebounce = null;
+let browseFilters = { genre:"", yearFrom:"", yearTo:"", contentType:"" };
+let editingMovieId = null;
+
+// Light local caches so the UI feels instant; the server is always the source of truth.
+let myWatchlistIds = new Set();
+let myHistory = new Map();   // movieId -> { progressMinutes, completed }
+let myRatings = new Map();   // movieId -> score (client-remembers what YOU rated this session;
+                              //   the API doesn't expose "my rating" separately from the average)
+
+function updateApiBase(value){
+  let clean = value.trim().replace(/\/$/,'');
+  try{
+    const u = new URL(clean);
+    clean = u.origin; // keep only protocol://host:port — discards any accidental /path or #fragment
+  } catch(e){
+    // not a full valid URL yet (e.g. still typing) — use as-is, checkConnection will just fail gracefully
+  }
+  API_BASE = clean;
+  document.getElementById('apiBaseInput').value = clean;
+  checkConnection();
+}
+
+async function checkConnection(){
+  const el = document.getElementById('connStatus');
+  el.textContent = 'Checking connection…';
+  try{
+    const res = await fetch(API_BASE + '/api/movies?page=0&size=1');
+    if(res.ok || res.status === 401 || res.status === 403){
+      el.innerHTML = `<b style="color:#7CD992;">● Connected</b> — reachable at ${escapeHtml(API_BASE)}`;
+    } else {
+      el.innerHTML = `<b style="color:var(--danger);">● Responding oddly</b> — got HTTP ${res.status}. Backend may still be starting up.`;
+    }
+  } catch(e){
+    el.innerHTML = `<b style="color:var(--danger);">● Can't reach it</b> — is <span class="mono">mvn spring-boot:run</span> still running? Check the address above.`;
+  }
+}
+checkConnection();
+
+/* ============================================================
+   API CLIENT
+   ============================================================ */
+async function apiFetch(method, path, body, auth){
+  const headers = {'Content-Type':'application/json'};
+  if(auth && session && session.accessToken){
+    headers['Authorization'] = 'Bearer ' + session.accessToken;
+  }
+  let res;
+  try{
+    res = await fetch(API_BASE + path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined });
+  } catch(networkErr){
+    logCall(method, path, 'ERR', `Could not reach ${API_BASE} — is the backend running?`);
+    throw new Error(`Could not reach the backend at ${API_BASE}. Make sure it's running (mvn spring-boot:run) and the address above is correct.`);
+  }
+
+  // Access token expired -> try one silent refresh, then retry once.
+  if(res.status === 401 && auth && session && session.refreshToken && !path.startsWith('/api/auth/refresh')){
+    const refreshed = await tryRefresh();
+    if(refreshed){
+      headers['Authorization'] = 'Bearer ' + session.accessToken;
+      res = await fetch(API_BASE + path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined });
+    }
+  }
+
+  let data = null;
+  const text = await res.text();
+  if(text){ try{ data = JSON.parse(text); } catch(e){ data = text; } }
+
+  logCall(method, path, res.status, data ? JSON.stringify(data).slice(0,320) : '(empty body)');
+
+  if(!res.ok){
+    const err = new Error((data && data.message) ? data.message : `Request failed with status ${res.status}`);
+    err.status = res.status;
+    err.body = data;
+    throw err;
+  }
+  return data;
+}
+
+async function tryRefresh(){
+  try{
+    const res = await fetch(API_BASE + '/api/auth/refresh', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ refreshToken: session.refreshToken })
+    });
+    if(!res.ok) return false;
+    const data = await res.json();
+    session.accessToken = data.accessToken;
+    session.refreshToken = data.refreshToken;
+    return true;
+  } catch(e){ return false; }
+}
+
+/* ============================================================
+   API CONSOLE LOGGING
+   ============================================================ */
+function logCall(verb, path, status, payload){
+  const el = document.getElementById('consoleLog');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  const statusClass = (typeof status === 'number' && status < 400) ? 'log-status-2' : 'log-status-4';
+  line.innerHTML = `<span class="log-verb">${verb}</span> <span class="log-path">${escapeHtml(path)}</span> → <span class="${statusClass}">${status}</span>\n<span class="log-payload">${escapeHtml(String(payload))}</span>`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+  const panel = document.getElementById('consolePanel');
+  if(!panel.classList.contains('open')){
+    document.getElementById('consoleToggleBtn').textContent = 'Show ▲ (new)';
+  }
+}
+function toggleConsole(){
+  const panel = document.getElementById('consolePanel');
+  panel.classList.toggle('open');
+  document.getElementById('consoleToggleBtn').textContent = panel.classList.contains('open') ? 'Hide ▼' : 'Show ▲';
+}
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+/* ============================================================
+   GOOGLE SIGN-IN
+   ============================================================ */
+function activateGoogleSignIn(clientIdFromArg){
+  const clientId = clientIdFromArg || document.getElementById('googleClientIdInput').value.trim();
+  if(!clientId){ return; }
+  if(!window.google || !window.google.accounts){
+    setTimeout(()=>activateGoogleSignIn(clientId), 300); // library still loading — retry shortly
+    return;
+  }
+  google.accounts.id.initialize({
+    client_id: clientId,
+    callback: handleGoogleCredential
+  });
+  google.accounts.id.renderButton(document.getElementById('googleSignInDiv'), {
+    theme: 'filled_black', size: 'large', width: 320, shape: 'pill'
+  });
+}
+
+async function handleGoogleCredential(response){
+  const errEl = document.getElementById('loginError');
+  try{
+    const data = await apiFetch('POST', '/api/auth/google', { idToken: response.credential }, false);
+    await startSession(data);
+  } catch(err){
+    if(errEl) errEl.textContent = err.message;
+  }
+}
+
+// Try to auto-activate on load if a Client ID was left over from last time isn't stored
+// (we don't use browser storage here) — the "Activate" button covers first-time setup.
+
+function setAuthTab(tab){
+  document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active', tab==='register');
+  document.getElementById('loginForm').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = tab==='register' ? 'block' : 'none';
+}
+
+async function handleLogin(e){
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  try{
+    const data = await apiFetch('POST', '/api/auth/login', { email, password }, false);
+    await startSession(data);
+  } catch(err){
+    errEl.textContent = err.message;
+  }
+  return false;
+}
+
+async function handleRegister(e){
+  e.preventDefault();
+  const fullName = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const errEl = document.getElementById('regError');
+  errEl.textContent = '';
+  try{
+    const data = await apiFetch('POST', '/api/auth/register', { fullName, email, password }, false);
+    await startSession(data);
+  } catch(err){
+    errEl.textContent = (err.body && err.body.details) ? err.body.details.join(' · ') : err.message;
+  }
+  return false;
+}
+
+async function startSession(authResponse){
+  session = {
+    accessToken: authResponse.accessToken,
+    refreshToken: authResponse.refreshToken,
+    userId: authResponse.userId,
+    fullName: authResponse.fullName,
+    email: authResponse.email,
+    role: authResponse.role
+  };
+  myRatings = new Map();
+
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'block';
+  document.getElementById('userChip').innerHTML = `Signed in as <b>${escapeHtml(session.fullName)}</b>`;
+  document.getElementById('adminToggle').checked = (session.role === 'ROLE_ADMIN');
+  document.getElementById('adminNavBtn').style.display = (session.role === 'ROLE_ADMIN') ? '' : 'none';
+
+  await refreshMyLists();
+  setView('home');
+}
+
+function toggleAdminMode(checked){
+  // The checkbox here just shows/hides the nav item for convenience.
+  // It does NOT grant real admin rights — the backend independently checks
+  // your account's actual role (ROLE_ADMIN) on every /api/movies/admin/** call.
+  document.getElementById('adminNavBtn').style.display = checked ? '' : 'none';
+  if(!checked && currentView === 'admin') setView('home');
+}
+
+function handleLogout(){
+  session = null;
+  myWatchlistIds = new Set();
+  myHistory = new Map();
+  myRatings = new Map();
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('loginForm').reset();
+  document.getElementById('registerForm').reset();
+}
+
+async function refreshMyLists(){
+  try{
+    const wl = await apiFetch('GET', '/api/watchlist?page=0&size=200', undefined, true);
+    myWatchlistIds = new Set((wl.content||[]).map(item => item.movie.id));
+  } catch(e){ /* non-fatal */ }
+  try{
+    const hist = await apiFetch('GET', '/api/watch-history?page=0&size=200', undefined, true);
+    myHistory = new Map((hist.content||[]).map(h => [h.movie.id, { progressMinutes: h.progressMinutes, completed: h.completed }]));
+  } catch(e){ /* non-fatal */ }
+}
+
+/* ============================================================
+   NAVIGATION / VIEWS
+   ============================================================ */
+function setView(view){
+  currentView = view;
+  searchQuery = '';
+  document.getElementById('searchInput').value = '';
+  document.querySelectorAll('#navLinks button').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  render();
+}
+
+function handleSearch(q){
+  searchQuery = q;
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(()=> render(), 350);
+}
+
+function loadingHtml(label){
+  return `<div class="empty-state"><b>${label || 'Loading…'}</b>Talking to ${escapeHtml(API_BASE)}</div>`;
+}
+
+function errorHtml(err, retryFn){
+  return `<div class="empty-state"><b>Something went wrong</b>${escapeHtml(err.message)}</div>`;
+}
+
+/* ============================================================
+   RENDER — each view fetches real data, then draws it
+   ============================================================ */
+async function render(){
+  const main = document.getElementById('mainContent');
+
+  if(searchQuery.trim()){
+    main.innerHTML = loadingHtml('Searching…');
+    try{
+      const results = await apiFetch('GET', `/api/movies/search?query=${encodeURIComponent(searchQuery)}&page=0&size=40`, undefined, false);
+      main.innerHTML = `
+        <div class="section-head">
+          <div><div class="section-title">Search results</div><div class="section-sub">"${escapeHtml(searchQuery)}" — ${results.totalElements} title(s) · GET /api/movies/search</div></div>
+        </div>
+        ${results.content.length ? `<div class="grid">${results.content.map(m=>cardHtml(m)).join('')}</div>` : emptyState('No matches', 'Try a different title, genre, or cast member.')}
+      `;
+    } catch(err){ main.innerHTML = errorHtml(err); }
+    return;
+  }
+
+  if(currentView === 'home'){
+    main.innerHTML = loadingHtml('Loading your home page…');
+    try{
+      const [trending, topRated, recs] = await Promise.all([
+        apiFetch('GET', '/api/movies/trending?limit=10', undefined, false),
+        apiFetch('GET', '/api/movies/top-rated?limit=10', undefined, false),
+        apiFetch('GET', '/api/recommendations/for-you?limit=10', undefined, true).catch(()=>[])
+      ]);
+      const continuing = Array.from(myHistory.entries()).filter(([id,h])=>!h.completed);
+
+      let continueHtml = '';
+      if(continuing.length){
+        const movies = await Promise.all(continuing.slice(0,10).map(([id])=> apiFetch('GET', `/api/movies/${id}`, undefined, false).catch(()=>null)));
+        const valid = movies.filter(Boolean);
+        if(valid.length) continueHtml = railSection('Continue Watching', 'GET /api/watch-history', valid.map(m=>cardHtml(m, myHistory.get(m.id))));
+      }
+
+      main.innerHTML = `
+        ${continueHtml}
+        ${railSection('Trending Now', 'GET /api/movies/trending', trending.map(m=>cardHtml(m)))}
+        ${railSection('Top Rated', 'GET /api/movies/top-rated', topRated.map(m=>cardHtml(m)))}
+        ${railSection('Picked For You', 'GET /api/recommendations/for-you', recs.length ? recs.map(m=>cardHtml(m)) : ['<span style="color:var(--text-dim);font-size:12px;">Log in and watch/rate a few titles to unlock this.</span>'])}
+      `;
+    } catch(err){ main.innerHTML = errorHtml(err); }
+  }
+
+  else if(currentView === 'foryou'){
+    main.innerHTML = loadingHtml('Building your recommendations…');
+    try{
+      const recs = await apiFetch('GET', '/api/recommendations/for-you?limit=16', undefined, true);
+      main.innerHTML = `
+        <div class="section-head">
+          <div><div class="section-title">Picked For You</div><div class="section-sub">GET /api/recommendations/for-you</div></div>
+        </div>
+        <div class="why-card">
+          <b>How this works:</b> the backend builds a genre-affinity profile from your real watch history
+          (completed watches count 2×, in-progress 1×) and any 4-5★ ratings (3×), then ranks unseen titles by
+          genre-affinity-sum + the title's own average rating. New here? You'll see trending/top-rated titles
+          until you watch or rate something.
+        </div>
+        ${recs.length ? `<div class="grid">${recs.map(m=>cardHtml(m)).join('')}</div>` : emptyState('Nothing to recommend yet', 'Watch or rate a few titles and this list will personalize.')}
+      `;
+    } catch(err){ main.innerHTML = errorHtml(err); }
+  }
+
+  else if(currentView === 'watchlist'){
+    main.innerHTML = loadingHtml('Loading your list…');
+    try{
+      const wl = await apiFetch('GET', '/api/watchlist?page=0&size=100', undefined, true);
+      myWatchlistIds = new Set(wl.content.map(item=>item.movie.id));
+      main.innerHTML = `
+        <div class="section-head">
+          <div><div class="section-title">My List</div><div class="section-sub">GET /api/watchlist</div></div>
+        </div>
+        ${wl.content.length ? `<div class="grid">${wl.content.map(item=>cardHtml(item.movie)).join('')}</div>` : emptyState('Your list is empty', 'Add titles from any movie card or its detail view.')}
+      `;
+    } catch(err){ main.innerHTML = errorHtml(err); }
+  }
+
+  else if(currentView === 'browse'){
+    main.innerHTML = renderBrowseShell();
+    await runBrowseSearch();
+  }
+
+  else if(currentView === 'history'){
+    main.innerHTML = loadingHtml('Loading your watch history…');
+    try{
+      const hist = await apiFetch('GET', '/api/watch-history?page=0&size=100', undefined, true);
+      myHistory = new Map(hist.content.map(h => [h.movie.id, { progressMinutes: h.progressMinutes, completed: h.completed }]));
+      main.innerHTML = `
+        <div class="section-head">
+          <div><div class="section-title">Watch History</div><div class="section-sub">GET /api/watch-history</div></div>
+        </div>
+        ${hist.content.length ? `<div class="grid">${hist.content.map(h=>cardHtml(h.movie, {progressMinutes:h.progressMinutes, completed:h.completed})).join('')}</div>` : emptyState('No watch history yet', 'Open a title and drag its progress bar to simulate watching.')}
+      `;
+    } catch(err){ main.innerHTML = errorHtml(err); }
+  }
+
+  else if(currentView === 'admin'){
+    main.innerHTML = loadingHtml('Loading catalog…');
+    await renderAdminView();
+  }
+}
+
+function railSection(title, endpoint, cardsHtmlArr){
+  return `
+    <div class="section-head">
+      <div><div class="section-title">${title}</div></div>
+      <div class="section-meta mono">${endpoint}</div>
+    </div>
+    <div class="rail">${cardsHtmlArr.join('')}</div>
+  `;
+}
+
+function emptyState(title, sub){
+  return `<div class="empty-state"><b>${title}</b>${sub}</div>`;
+}
+
+function cardHtml(movie, historyEntry){
+  if(!movie) return '';
+  const rating = movie.averageRating || 0;
+  const progressPct = historyEntry ? Math.min(100, Math.round((historyEntry.progressMinutes / (movie.durationMinutes||1)) * 100)) : null;
+  const posterStyle = movie.posterUrl
+    ? `background-image:url('${movie.posterUrl.replace(/'/g,"%27")}'); background-size:cover; background-position:center;`
+    : `background:${gradientFor(movie)}`;
+  return `
+    <div class="ticket" onclick="openModal(${movie.id})">
+      <div class="ticket-poster" style="${posterStyle}">
+        <span class="ticket-type">${movie.contentType||''}</span>
+        ${movie.videoUrl ? `<span class="ticket-badge" style="left:8px;right:auto;">▶</span>` : ''}
+        ${rating > 0 ? `<span class="ticket-badge">★ ${rating.toFixed(1)}</span>` : ''}
+      </div>
+      <div class="ticket-perf"></div>
+      <div class="ticket-body">
+        <div class="ticket-title">${escapeHtml(movie.title)}</div>
+        <div class="ticket-meta"><span>${movie.releaseYear||'—'}</span><span>·</span><span>${movie.durationMinutes||'—'}m</span></div>
+        ${progressPct!==null ? `<div class="ticket-progress"><div style="width:${progressPct}%"></div></div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+let activeMovieId = null;
+
+async function openModal(movieId){
+  activeMovieId = movieId;
+  document.getElementById('modalContent').innerHTML = `<div class="modal-body">${loadingHtml('Loading title…')}</div>`;
+  document.getElementById('modalOverlay').classList.add('open');
+
+  try{
+    const movie = await apiFetch('GET', `/api/movies/${movieId}`, undefined, false);
+    const inWatchlist = myWatchlistIds.has(movieId);
+    const history = myHistory.get(movieId);
+    const myRating = myRatings.get(movieId) || 0;
+    const rating = movie.averageRating || 0;
+
+    let similar = [];
+    try{ similar = await apiFetch('GET', `/api/recommendations/similar/${movieId}?limit=6`, undefined, false); } catch(e){}
+
+    if(activeMovieId !== movieId) return; // user closed/switched before this resolved
+
+    document.getElementById('modalContent').innerHTML = `
+      <div class="modal-hero" id="modalHero" style="background:${gradientFor(movie)}">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div class="modal-hero-title">${escapeHtml(movie.title)}</div>
+        <div class="modal-hero-meta">${movie.releaseYear||''} · ${movie.durationMinutes||'?'} min · ${movie.contentType||''}${rating>0?` · ★ ${rating.toFixed(1)}`:''}</div>
+        ${movie.videoUrl ? `<button class="primary-btn" style="width:auto; padding:10px 22px; margin-top:12px;" onclick="playVideo(${movieId}, '${encodeURIComponent(movie.videoUrl)}', ${movie.durationMinutes||120})">▶ Play</button>` : ''}
+      </div>
+      <div class="modal-body">
+        <div class="chip-row">${(movie.genres||[]).map(g=>`<span class="chip">${escapeHtml(g)}</span>`).join('')}</div>
+        <div class="modal-desc">${escapeHtml(movie.description||'No description yet.')}</div>
+        <div class="modal-credits"><b>Cast:</b> ${escapeHtml(movie.cast||'—')}<br><b>Director:</b> ${escapeHtml(movie.director||'—')}</div>
+
+        <div class="modal-actions">
+          <button class="action-btn ${inWatchlist?'on':''}" onclick="toggleWatchlist(${movieId})">
+            ${inWatchlist ? '✓ In My List' : '+ Add to My List'}
+          </button>
+          <div class="action-btn" style="cursor:default;">
+            <span>Rate:</span>
+            <span class="stars">${[1,2,3,4,5].map(n=>`<span class="star ${n<=myRating?'filled':''}" onclick="rateMovie(${movieId},${n})">★</span>`).join('')}</span>
+          </div>
+        </div>
+
+        ${!movie.videoUrl ? `<div class="why-card">No video file attached to this title yet. Add one via the Admin panel (paste any direct .mp4 link into "Video URL") to unlock real playback here.</div>` : ''}
+
+        <div class="progress-block">
+          <div class="progress-block-head">
+            <span>${history ? (history.completed ? 'Watched' : `${history.progressMinutes} / ${movie.durationMinutes||'?'} min`) : 'Not started'}</span>
+            <span>${movie.videoUrl ? 'Updates automatically while you watch' : 'Drag to simulate playback progress'}</span>
+          </div>
+          <div class="progress-track" onclick="scrubProgress(event, ${movieId}, ${movie.durationMinutes||120})">
+            <div class="progress-fill" style="width:${history ? Math.min(100,(history.progressMinutes/(movie.durationMinutes||1))*100) : 0}%"></div>
+          </div>
+        </div>
+
+        <div class="modal-section-title">Because you're viewing this — GET /api/recommendations/similar/${movieId}</div>
+        <div class="rail">${similar.length ? similar.map(m=>cardHtml(m)).join('') : '<span style="color:var(--text-dim);font-size:12px;">No similar titles found in the catalog yet.</span>'}</div>
+      </div>
+    `;
+  } catch(err){
+    document.getElementById('modalContent').innerHTML = `<div class="modal-body">${errorHtml(err)}</div>`;
+  }
+}
+
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  activeMovieId = null;
+  render();
+}
+
+async function toggleWatchlist(movieId){
+  try{
+    if(myWatchlistIds.has(movieId)){
+      await apiFetch('DELETE', `/api/watchlist/${movieId}`, undefined, true);
+      myWatchlistIds.delete(movieId);
+    } else {
+      await apiFetch('POST', `/api/watchlist/${movieId}`, undefined, true);
+      myWatchlistIds.add(movieId);
+    }
+    openModal(movieId);
+  } catch(err){ alert(err.message); }
+}
+
+async function rateMovie(movieId, score){
+  try{
+    await apiFetch('POST', '/api/ratings', { movieId, score }, true);
+    myRatings.set(movieId, score);
+    openModal(movieId);
+  } catch(err){ alert(err.message); }
+}
+
+function playVideo(movieId, encodedUrl, durationMinutes){
+  const url = decodeURIComponent(encodedUrl);
+  const hero = document.getElementById('modalHero');
+  if(!hero) return;
+
+  hero.outerHTML = `
+    <div id="modalHero" style="background:#000;">
+      <video id="playerEl" controls autoplay style="width:100%; max-height:360px; display:block; background:#000;"
+        src="${url}"></video>
+      <button class="modal-close" onclick="closeModal()" style="z-index:2;">✕</button>
+    </div>
+  `;
+
+  const video = document.getElementById('playerEl');
+  let lastSynced = 0;
+
+  const syncProgress = (completed) => {
+    const minutes = Math.min(durationMinutes, Math.max(1, Math.round(video.currentTime / 60) || 1));
+    scrubProgressDirect(movieId, minutes, !!completed);
+  };
+
+  video.addEventListener('timeupdate', () => {
+    // Sync roughly every 15 real seconds of playback, not on every frame.
+    if(video.currentTime - lastSynced > 15){
+      lastSynced = video.currentTime;
+      syncProgress(false);
+    }
+  });
+  video.addEventListener('pause', () => syncProgress(false));
+  video.addEventListener('ended', () => syncProgress(true));
+}
+
+// Same as scrubProgress but callable directly with computed values (used by the real video player).
+async function scrubProgressDirect(movieId, minutes, completed){
+  try{
+    await apiFetch('POST', '/api/watch-history/progress', { movieId, progressMinutes: minutes, completed }, true);
+    myHistory.set(movieId, { progressMinutes: minutes, completed });
+  } catch(err){ /* non-fatal — don't interrupt playback over a sync hiccup */ }
+}
+
+async function scrubProgress(e, movieId, duration){
+  const track = e.currentTarget;
+  const rect = track.getBoundingClientRect();
+  const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+  const minutes = Math.round(pct * duration);
+  const completed = minutes >= duration - 1;
+
+  try{
+    await apiFetch('POST', '/api/watch-history/progress', { movieId, progressMinutes: minutes, completed }, true);
+    myHistory.set(movieId, { progressMinutes: minutes, completed });
+    openModal(movieId);
+  } catch(err){ alert(err.message); }
+}
+
+/* ============================================================
+   BROWSE (search with filters)
+   ============================================================ */
+function renderBrowseShell(){
+  const genreOptions = GENRES.map(g=>`<option value="${g}" ${browseFilters.genre===g?'selected':''}>${g}</option>`).join('');
+  return `
+    <div class="section-head">
+      <div><div class="section-title">Browse</div><div class="section-sub">GET /api/movies/search — filters combine independently</div></div>
+    </div>
+    <div class="filter-bar">
+      <div class="filter-field">
+        <label>Genre</label>
+        <select id="filterGenre"><option value="">Any genre</option>${genreOptions}</select>
+      </div>
+      <div class="filter-field narrow">
+        <label>Year from</label>
+        <input type="number" id="filterYearFrom" placeholder="e.g. 2020" value="${browseFilters.yearFrom}">
+      </div>
+      <div class="filter-field narrow">
+        <label>Year to</label>
+        <input type="number" id="filterYearTo" placeholder="e.g. 2024" value="${browseFilters.yearTo}">
+      </div>
+      <div class="filter-field">
+        <label>Content type</label>
+        <select id="filterContentType">
+          <option value="">Any type</option>
+          <option value="MOVIE" ${browseFilters.contentType==='MOVIE'?'selected':''}>Movie</option>
+          <option value="DOCUMENTARY" ${browseFilters.contentType==='DOCUMENTARY'?'selected':''}>Documentary</option>
+          <option value="SERIES" ${browseFilters.contentType==='SERIES'?'selected':''}>Series</option>
+        </select>
+      </div>
+      <button class="filter-reset" onclick="resetBrowseFilters()">Reset</button>
+      <button class="filter-apply" onclick="applyBrowseFiltersFromForm()">Apply filters</button>
+    </div>
+    <div id="browseResults">${loadingHtml('Loading catalog…')}</div>
+  `;
+}
+
+async function runBrowseSearch(){
+  const params = new URLSearchParams();
+  if(browseFilters.genre) params.set('genre', browseFilters.genre);
+  if(browseFilters.yearFrom) params.set('yearFrom', browseFilters.yearFrom);
+  if(browseFilters.yearTo) params.set('yearTo', browseFilters.yearTo);
+  if(browseFilters.contentType) params.set('contentType', browseFilters.contentType);
+  params.set('page','0'); params.set('size','60');
+
+  const target = document.getElementById('browseResults');
+  try{
+    const results = await apiFetch('GET', `/api/movies/search?${params.toString()}`, undefined, false);
+    if(!target) return;
+    target.innerHTML = results.content.length
+      ? `<div class="grid">${results.content.map(m=>cardHtml(m)).join('')}</div>`
+      : emptyState('No titles match these filters', 'Try widening the year range or clearing the genre.');
+  } catch(err){ if(target) target.innerHTML = errorHtml(err); }
+}
+
+function applyBrowseFiltersFromForm(){
+  browseFilters.genre = document.getElementById('filterGenre').value;
+  browseFilters.yearFrom = document.getElementById('filterYearFrom').value;
+  browseFilters.yearTo = document.getElementById('filterYearTo').value;
+  browseFilters.contentType = document.getElementById('filterContentType').value;
+  runBrowseSearch();
+}
+
+function resetBrowseFilters(){
+  browseFilters = { genre:"", yearFrom:"", yearTo:"", contentType:"" };
+  render();
+}
+
+/* ============================================================
+   ADMIN (real POST/PUT/DELETE to /api/movies/admin/**)
+   ============================================================ */
+let adminMovies = [];
+
+async function renderAdminView(){
+  const main = document.getElementById('mainContent');
+  if(session.role !== 'ROLE_ADMIN'){
+    main.innerHTML = `<div class="locked-state"><b>403 — Admin access required</b>Your account's role is <span class="mono">${session.role}</span>. The backend enforces <span class="mono">hasRole("ADMIN")</span> on <span class="mono">/api/movies/admin/**</span> — this isn't something the "Admin mode" checkbox can fake. To actually get admin rights, an admin needs to update your role directly in the database (there's no self-serve promotion endpoint, on purpose).</div>`;
+    return;
+  }
+
+  try{
+    const page = await apiFetch('GET', '/api/movies?page=0&size=100', undefined, false);
+    adminMovies = page.content;
+  } catch(err){
+    main.innerHTML = errorHtml(err);
+    return;
+  }
+
+  const editing = editingMovieId !== null ? adminMovies.find(m=>m.id===editingMovieId) : null;
+
+  main.innerHTML = `
+    <div class="section-head">
+      <div><div class="section-title">Admin — Catalog</div><div class="section-sub">POST / PUT / DELETE /api/movies/admin — requires ROLE_ADMIN</div></div>
+    </div>
+    <div class="admin-grid">
+      <div class="admin-form">
+        <h3>${editing ? 'Edit title' : 'Add a new title'}</h3>
+        <div class="field"><label>Title</label><input id="af_title" value="${editing?escapeHtml(editing.title):''}"></div>
+        <div class="field"><label>Description</label><textarea id="af_description">${editing?escapeHtml(editing.description||''):''}</textarea></div>
+        <div class="field"><label>Release year</label><input type="number" id="af_year" value="${editing?editing.releaseYear:''}"></div>
+        <div class="field"><label>Duration (minutes)</label><input type="number" id="af_duration" value="${editing?editing.durationMinutes:''}"></div>
+        <div class="field"><label>Content type</label>
+          <select id="af_type">
+            <option value="MOVIE" ${editing&&editing.contentType==='MOVIE'?'selected':''}>Movie</option>
+            <option value="DOCUMENTARY" ${editing&&editing.contentType==='DOCUMENTARY'?'selected':''}>Documentary</option>
+            <option value="SERIES" ${editing&&editing.contentType==='SERIES'?'selected':''}>Series</option>
+          </select>
+        </div>
+        <div class="field"><label>Cast</label><input id="af_cast" value="${editing?escapeHtml(editing.cast||''):''}"></div>
+        <div class="field"><label>Director</label><input id="af_director" value="${editing?escapeHtml(editing.director||''):''}"></div>
+        <div class="field"><label>Poster URL (optional)</label><input id="af_posterUrl" value="${editing?escapeHtml(editing.posterUrl||''):''}" placeholder="https://..."></div>
+        <div class="field"><label>Video URL (optional — a direct .mp4 link enables real playback)</label><input id="af_videoUrl" value="${editing?escapeHtml(editing.videoUrl||''):''}" placeholder="https://.../video.mp4"></div>
+        <div class="field"><label>Genres</label>
+          <div class="genre-check-grid">
+            ${GENRES.map(g=>`<label><input type="checkbox" value="${g}" ${editing&&editing.genres&&editing.genres.includes(g)?'checked':''}> ${g}</label>`).join('')}
+          </div>
+        </div>
+        <div class="field"><label>Other genre (optional, creates it if new)</label><input id="af_othergenre" placeholder="e.g. Musical"></div>
+        <div class="admin-form-actions">
+          ${editing ? `<button class="btn-cancel" onclick="cancelEdit()">Cancel</button>` : ''}
+          <button class="primary-btn" style="margin-top:0;" onclick="submitAdminForm()">${editing ? 'Save changes' : 'Create title'}</button>
+        </div>
+      </div>
+
+      <div>
+        <table class="admin-table">
+          <thead><tr><th>Title</th><th>Year</th><th>Type</th><th>Genres</th><th>Views</th><th></th></tr></thead>
+          <tbody>
+            ${adminMovies.map(m=>`
+              <tr>
+                <td>${escapeHtml(m.title)}</td>
+                <td class="mono">${m.releaseYear||'—'}</td>
+                <td class="mono">${m.contentType||''}</td>
+                <td>${(m.genres||[]).join(', ')}</td>
+                <td class="mono">${m.viewCount||0}</td>
+                <td class="admin-row-actions">
+                  <button onclick="startEdit(${m.id})">Edit</button>
+                  <button class="danger" onclick="deleteMovie(${m.id})">Delete</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function startEdit(id){ editingMovieId = id; render(); window.scrollTo({top:0, behavior:'smooth'}); }
+function cancelEdit(){ editingMovieId = null; render(); }
+
+async function submitAdminForm(){
+  const title = document.getElementById('af_title').value.trim();
+  if(!title){ alert('Title is required.'); return; }
+
+  const genres = Array.from(document.querySelectorAll('.genre-check-grid input:checked')).map(el=>el.value);
+  const other = document.getElementById('af_othergenre').value.trim();
+  if(other) genres.push(other);
+
+  const payload = {
+    title,
+    description: document.getElementById('af_description').value.trim(),
+    releaseYear: Number(document.getElementById('af_year').value) || null,
+    durationMinutes: Number(document.getElementById('af_duration').value) || null,
+    contentType: document.getElementById('af_type').value,
+    cast: document.getElementById('af_cast').value.trim(),
+    director: document.getElementById('af_director').value.trim(),
+    posterUrl: document.getElementById('af_posterUrl').value.trim() || null,
+    videoUrl: document.getElementById('af_videoUrl').value.trim() || null,
+    genres
+  };
+
+  try{
+    if(editingMovieId !== null){
+      await apiFetch('PUT', `/api/movies/admin/${editingMovieId}`, payload, true);
+      editingMovieId = null;
+    } else {
+      await apiFetch('POST', '/api/movies/admin', payload, true);
+    }
+    render();
+  } catch(err){ alert(err.message); }
+}
+
+async function deleteMovie(id){
+  const movie = adminMovies.find(m=>m.id===id);
+  if(!confirm(`Delete "${movie ? movie.title : 'this title'}"? This can't be undone.`)) return;
+  try{
+    await apiFetch('DELETE', `/api/movies/admin/${id}`, undefined, true);
+    if(editingMovieId === id) editingMovieId = null;
+    render();
+  } catch(err){ alert(err.message); }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: streamflix-backend
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/streamflix?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    username: "${DB_USERNAME:root}"
+    password: "${DB_PASSWORD:Lucky@12342006}"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+
+  jackson:
+    default-property-inclusion: non_null
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B59}
+    access-token-expiration-ms: 900000        # 15 minutes
+    refresh-token-expiration-ms: 604800000    # 7 days
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:385579745711-ibgeu6mnefk5a7un66b3qdbmd29odi9n.apps.googleusercontent.com}           # paste your Google OAuth Client ID here, or set the env var
+
+logging:
+  level:
+    com.streamflix: DEBUG
+    org.springframework.security: INFO
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
