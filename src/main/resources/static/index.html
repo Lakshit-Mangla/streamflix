@@ -400,8 +400,8 @@
 
     <div class="field" style="margin-bottom:18px;">
       <label>Backend address</label>
-      <input type="text" id="apiBaseInput" name="streamflix-backend-address-not-a-url-field" autocomplete="off" value="http://localhost:8080" onchange="updateApiBase(this.value)">
-      <button type="button" onclick="document.getElementById('apiBaseInput').value='http://localhost:8080'; updateApiBase('http://localhost:8080');" style="margin-top:6px; background:var(--surface-3); color:var(--text-dim); font-size:11px; padding:6px 10px; border-radius:5px;">Reset to default</button>
+      <input type="text" id="apiBaseInput" name="streamflix-backend-address-not-a-url-field" autocomplete="off" value="https://streamflix-production-1e4b.up.railway.app" onchange="updateApiBase(this.value)">
+      <button type="button" onclick="document.getElementById('apiBaseInput').value='https://streamflix-production-1e4b.up.railway.app'; updateApiBase('https://streamflix-production-1e4b.up.railway.app');" style="margin-top:6px; background:var(--surface-3); color:var(--text-dim); font-size:11px; padding:6px 10px; border-radius:5px;">Reset to default</button>
       <div id="connStatus" class="auth-note" style="margin-top:8px;">Checking connection…</div>
     </div>
 
@@ -493,7 +493,7 @@
 /* ============================================================
    CONFIG
    ============================================================ */
-let API_BASE = localStorage_safe_get() || "http://localhost:8080";
+let API_BASE = localStorage_safe_get() || "https://streamflix-production-1e4b.up.railway.app";
 
 function localStorage_safe_get(){ return null; } // this file runs standalone in your own browser, not inside Claude — no storage restrictions apply, but we keep it simple and just re-enter the URL each time you open the file.
 
